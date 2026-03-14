@@ -23,7 +23,7 @@
 
 <br>
 
-<img src="https://raw.githubusercontent.com/nishantmandil/job-hunter-bot/main/docs/dashboard.png" alt="Dashboard Preview" width="85%" style="border-radius:12px"/>
+<img src="https://raw.githubusercontent.com/nishantmandil/job-hunter-bot/main/docs/image.png" alt="Dashboard Preview" width="85%" style="border-radius:12px"/>
 
 > *Screenshot: Flask web dashboard — dark UI with live stats, funnel tracker, and one-click batch sending*
 
