@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Setup — DevOps Job Hunter{% endblock %}
+{% block page_title %}Setup{% endblock %}
+{% block page_sub %}Configure your profile, API keys, and settings{% endblock %}
+
+{% block content %}
+<div class="grid2 fade-in" style="align-items:start">
+
+  <!-- LEFT COL -->
+  <div>
+    <!-- PROFILE -->
+    <div class="card mb">
+      <div class="card-title">Your DevOps profile</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full name</label>
+          <input id="p-name" value="{{ cfg.profile.name }}" placeholder="Arjun Mehta">
+        </div>
+        <div class="form-group">
+          <label>Current title</label>
+          <input id="p-title" value="{{ cfg.profile.title }}" placeholder="DevOps Engineer">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Experience</label>
+          <select id="p-exp">
+            {% for v in ['0-2','3-5','6-10','10+'] %}
+            <option value="{{ v }}" {% if cfg.profile.experience_years==v %}selected{% endif %}>{{ v }} years</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <input id="p-loc" value="{{ cfg.profile.location }}" placeholder="Delhi, India (open to remote)">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>LinkedIn URL</label>
+          <input id="p-li" value="{{ cfg.profile.linkedin }}" placeholder="linkedin.com/in/yourprofile">
+        </div>
+        <div class="form-group">
+          <label>GitHub URL</label>
+          <input id="p-gh" value="{{ cfg.profile.github }}" placeholder="github.com/yourhandle">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Best achievement (quantified)</label>
+        <input id="p-ach1" value="{{ cfg.profile.achievement_1 }}" placeholder="Reduced deploy time by 60% using GitOps + ArgoCD">
+      </div>
+      <div class="form-group">
+        <label>Second achievement</label>
+        <input id="p-ach2" value="{{ cfg.profile.achievement_2 }}" placeholder="Cut cloud costs 35% through Terraform rightsizing">
+      </div>
+      <div class="form-group">
+        <label>Target roles</label>
+        <input id="p-roles" value="{{ cfg.profile.target_roles }}" placeholder="DevOps Engineer, SRE, Platform Engineer">
+      </div>
+      <div class="form-group">
+        <label>Skills (click to toggle)</label>
+        <div class="skills-wrap" id="skills-wrap">
+          {% set all_skills = ['Docker','Kubernetes','CI/CD','AWS','GCP','Azure','Terraform','Ansible',
+                               'Jenkins','GitLab CI','ArgoCD','Helm','Prometheus','Grafana','Python',
+                               'Bash','Go','Linux','EKS','ECS','CloudFormation','Datadog','PagerDuty'] %}
+          {% for sk in all_skills %}
+          <span class="skill-tag {% if sk in cfg.profile.skills %}on{% endif %}"
+                onclick="this.classList.toggle('on')">{{ sk }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      <button class="btn primary" style="width:100%;justify-content:center;margin-top:8px" onclick="saveProfile()">
+        Save profile
+      </button>
+    </div>
+  </div>
+
+  <!-- RIGHT COL -->
+  <div>
+    <!-- API KEYS -->
+    <div class="card mb">
+      <div class="card-title">API keys</div>
+      <div class="tip" style="margin-bottom:14px">Keys are saved locally in config.json — never transmitted anywhere except the respective APIs.</div>
+
+      <div class="form-group">
+        <label>Groq API key <span style="color:var(--accent);font-size:10px">(required — free at console.groq.com)</span></label>
+        <input type="password" id="k-groq" value="{{ cfg.api_keys.groq }}" placeholder="gsk_...">
+      </div>
+      <div class="form-group">
+        <label>Hunter.io API key <span style="color:var(--text3);font-size:10px">(optional — 25 free/month)</span></label>
+        <input type="password" id="k-hunter" value="{{ cfg.api_keys.hunter_io }}" placeholder="hunter.io key">
+      </div>
+      <div class="form-group">
+        <label>Gmail address</label>
+        <input id="k-gmail" value="{{ cfg.api_keys.gmail_address }}" placeholder="you@gmail.com">
+      </div>
+      <div class="form-group">
+        <label>Gmail App Password <span style="color:var(--text3);font-size:10px">(not your normal password)</span></label>
+        <input type="password" id="k-gmailpw" value="{{ cfg.api_keys.gmail_app_password }}" placeholder="16-char app password">
+      </div>
+      <div class="tip warn" style="margin-bottom:12px">
+        Gmail App Password: enable 2FA → <strong>myaccount.google.com → Security → App Passwords</strong>
+      </div>
+      <button class="btn primary" style="width:100%;justify-content:center" onclick="saveKeys()">Save API keys</button>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="card">
+      <div class="card-title">Send settings</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Max emails per day</label>
+          <input type="number" id="s-daily" value="{{ cfg.settings.max_emails_per_day }}" min="1" max="100">
+        </div>
+        <div class="form-group">
+          <label>Follow-up 1 (days)</label>
+          <input type="number" id="s-f1" value="{{ cfg.settings.followup_day_1 }}" min="1">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Follow-up 2 (days)</label>
+          <input type="number" id="s-f2" value="{{ cfg.settings.followup_day_2 }}" min="1">
+        </div>
+        <div class="form-group">
+          <label>Break-up email (days)</label>
+          <input type="number" id="s-f3" value="{{ cfg.settings.followup_day_3 }}" min="1">
+        </div>
+      </div>
+      <div class="tip warn" style="margin-bottom:12px">Keep daily sends under 50 to avoid Gmail spam flags.</div>
+      <button class="btn primary" style="width:100%;justify-content:center" onclick="saveSettings()">Save settings</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function post(url, data) {
+  const r = await fetch(url, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  return r.json();
+}
+
+async function saveProfile() {
+  const skills = [...document.querySelectorAll('.skill-tag.on')].map(s=>s.textContent).join(', ');
+  const d = await post('/api/save-config', {
+    section:'profile',
+    name:   document.getElementById('p-name').value,
+    experience_years: document.getElementById('p-exp').value,
+    title:  document.getElementById('p-title').value,
+    location: document.getElementById('p-loc').value,
+    linkedin: document.getElementById('p-li').value,
+    github:   document.getElementById('p-gh').value,
+    achievement_1: document.getElementById('p-ach1').value,
+    achievement_2: document.getElementById('p-ach2').value,
+    target_roles:  document.getElementById('p-roles').value,
+    skills
+  });
+  if (d.ok) toast('Profile saved!','ok'); else toast('Save failed','err');
+}
+
+async function saveKeys() {
+  const d = await post('/api/save-config', {
+    section: 'keys',
+    groq:      document.getElementById('k-groq').value,
+    hunter_io: document.getElementById('k-hunter').value,
+    gmail_address:       document.getElementById('k-gmail').value,
+    gmail_app_password:  document.getElementById('k-gmailpw').value,
+  });
+  if (d.ok) toast('API keys saved!','ok'); else toast('Save failed','err');
+}
+
+async function saveSettings() {
+  const d = await post('/api/save-config', {
+    section: 'settings',
+    max_emails_per_day: document.getElementById('s-daily').value,
+    followup_day_1: document.getElementById('s-f1').value,
+    followup_day_2: document.getElementById('s-f2').value,
+    followup_day_3: document.getElementById('s-f3').value,
+  });
+  if (d.ok) toast('Settings saved!','ok'); else toast('Save failed','err');
+}
+</script>
+{% endblock %}

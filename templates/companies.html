@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Companies — DevOps Job Hunter{% endblock %}
+{% block page_title %}Companies{% endblock %}
+{% block page_sub %}Manage your target company list{% endblock %}
+
+{% block content %}
+<div class="flex-between mb">
+  <div style="display:flex;gap:10px">
+    <button class="btn primary" onclick="openModal('add-modal')">⬡ Add company</button>
+    <button class="btn" onclick="openModal('bulk-modal')">⊞ Bulk import CSV</button>
+    <button class="btn" onclick="loadSamples()">⚡ Load 30 Indian tech companies</button>
+  </div>
+  <div style="font-family:var(--mono);font-size:12px;color:var(--text2)">
+    {{ companies|length }} companies
+  </div>
+</div>
+
+<div class="card fade-in">
+  {% if companies %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Company</th><th>Domain</th><th>HR Email</th>
+          <th>Role</th><th>Verified</th><th>Added</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in companies %}
+        <tr id="co-row-{{ c.id }}">
+          <td><strong>{{ c.name }}</strong></td>
+          <td style="font-family:var(--mono);font-size:11px;color:var(--text2)">{{ c.domain or '—' }}</td>
+          <td style="font-family:var(--mono);font-size:11px">{{ c.hr_email or '—' }}</td>
+          <td style="color:var(--text2)">{{ c.contact_role }}</td>
+          <td><span class="badge {{ 'verified' if c.verified else 'unverified' }}">{{ 'verified' if c.verified else 'guess' }}</span></td>
+          <td style="color:var(--text3);font-size:11px">{{ c.added_date }}</td>
+          <td>
+            <button class="btn sm danger" onclick="deleteCo({{ c.id }})">✕</button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <span class="icon">⬡</span>
+    <h3>No companies yet</h3>
+    <p>Add companies manually, bulk import a CSV, or load the 30 sample Indian tech companies.</p>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:16px">
+      <button class="btn primary" onclick="openModal('add-modal')">Add company</button>
+      <button class="btn" onclick="loadSamples()">Load samples</button>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="tip mt">
+  For verified emails: use <strong>Hunter.io</strong> (free 25/month) or <strong>Apollo.io</strong> (free 50/month) — add keys in Setup. Otherwise the bot guesses <code style="background:var(--bg3);padding:1px 6px;border-radius:4px;font-size:11px">hr@domain.com</code>.
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-bg" id="add-modal">
+  <div class="modal">
+    <div class="modal-title">⬡ Add Company</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Company name *</label>
+        <input id="add-name" placeholder="e.g. Razorpay" autofocus>
+      </div>
+      <div class="form-group">
+        <label>Domain</label>
+        <input id="add-domain" placeholder="razorpay.com">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>HR email (optional — auto-guessed if blank)</label>
+        <input id="add-email" placeholder="hr@razorpay.com">
+      </div>
+      <div class="form-group">
+        <label>Contact role</label>
+        <select id="add-role">
+          <option>HR / Recruiter</option>
+          <option>Engineering Manager</option>
+          <option>CTO / VP Engineering</option>
+          <option>Talent Acquisition Lead</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('add-modal')">Cancel</button>
+      <button class="btn primary" onclick="addCompany()">Add company</button>
+    </div>
+  </div>
+</div>
+
+<!-- BULK MODAL -->
+<div class="modal-bg" id="bulk-modal">
+  <div class="modal">
+    <div class="modal-title">⊞ Bulk Import CSV</div>
+    <div class="form-group">
+      <label>Paste CSV (Company, Domain, Email — one per line)</label>
+      <textarea id="bulk-csv" rows="10" placeholder="Razorpay, razorpay.com, hr@razorpay.com
+Swiggy, swiggy.in, careers@swiggy.in
+Zomato, zomato.com,
+Flipkart, flipkart.com,
+CRED, cred.club,"></textarea>
+    </div>
+    <div class="tip">HR email column is optional — the bot will guess if blank.</div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('bulk-modal')">Cancel</button>
+      <button class="btn primary" onclick="bulkImport()">Import</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function addCompany() {
+  const name = document.getElementById('add-name').value.trim();
+  if (!name) { toast('Company name required','err'); return; }
+  const r = await fetch('/api/add-company', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      name, domain: document.getElementById('add-domain').value.trim(),
+      email: document.getElementById('add-email').value.trim(),
+      role: document.getElementById('add-role').value
+    })
+  });
+  const d = await r.json();
+  if (d.ok) { toast('Added: '+name+' → '+d.email,'ok'); setTimeout(()=>location.reload(),800); }
+  else toast(d.error,'err');
+}
+
+async function deleteCo(id) {
+  if (!confirm('Remove this company?')) return;
+  await fetch('/api/delete-company/'+id, {method:'DELETE'});
+  document.getElementById('co-row-'+id).remove();
+  toast('Removed','ok');
+}
+
+async function bulkImport() {
+  const csv = document.getElementById('bulk-csv').value.trim();
+  if (!csv) return;
+  const r = await fetch('/api/bulk-import', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({csv})
+  });
+  const d = await r.json();
+  toast('Imported '+d.added+' companies','ok');
+  setTimeout(()=>location.reload(),900);
+}
+
+async function loadSamples() {
+  const csv = `Razorpay, razorpay.com, hr@razorpay.com
+Swiggy, swiggy.in, careers@swiggy.in
+Zomato, zomato.com, hr@zomato.com
+Flipkart, flipkart.com, careers@flipkart.com
+Paytm, paytm.com, hr@paytm.com
+PhonePe, phonepe.com, hr@phonepe.com
+CRED, cred.club, talent@cred.club
+Meesho, meesho.com, careers@meesho.com
+Groww, groww.in, hr@groww.in
+Zepto, zeptonow.com, engineering@zeptonow.com
+Freshworks, freshworks.com, careers@freshworks.com
+Atlassian, atlassian.com, recruiting@atlassian.com
+Ola, olacabs.com, hr@olacabs.com
+Urban Company, urbancompany.com, careers@urbancompany.com
+BrowserStack, browserstack.com, hr@browserstack.com
+Postman, postman.com, recruiting@postman.com
+Chargebee, chargebee.com, hr@chargebee.com
+Innovaccer, innovaccer.com, careers@innovaccer.com
+CleverTap, clevertap.com, hr@clevertap.com
+Hasura, hasura.io, hr@hasura.io
+Niyo, niyo.co, careers@niyo.co
+Lenskart, lenskart.com, hr@lenskart.com
+Nykaa, nykaa.com, careers@nykaa.com
+ShareChat, sharechat.com, careers@sharechat.com
+Vedantu, vedantu.com, hr@vedantu.com
+Policybazaar, policybazaar.com, careers@policybazaar.com
+Zetwerk, zetwerk.com, hr@zetwerk.com
+Dunzo, dunzo.in, hr@dunzo.in
+Unacademy, unacademy.com, hr@unacademy.com
+InMobi, inmobi.com, hr@inmobi.com`;
+  const r = await fetch('/api/bulk-import', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({csv})
+  });
+  const d = await r.json();
+  toast('Loaded '+d.added+' companies','ok');
+  setTimeout(()=>location.reload(),900);
+}
+</script>
+{% endblock %}

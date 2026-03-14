@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Tracker — DevOps Job Hunter{% endblock %}
+{% block page_title %}Application Tracker{% endblock %}
+{% block page_sub %}Track every application and update statuses{% endblock %}
+
+{% block content %}
+<!-- FILTER TABS -->
+<div style="display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap" class="fade-in">
+  {% for s in ['all','sent','replied','interview','offer','rejected','no-response'] %}
+  <a href="/tracker?status={{ s }}"
+     class="btn sm {% if filter==s %}primary{% endif %}">
+    {{ s.replace('-',' ').title() }}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="card fade-in">
+  {% if applications %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>Company</th><th>HR Email</th>
+          <th>Sent</th><th>Status</th>
+          <th>FU1</th><th>FU2</th><th>FU3</th>
+          <th>Update</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in applications %}
+        <tr id="app-row-{{ a.id }}">
+          <td style="color:var(--text3);font-family:var(--mono)">{{ a.id }}</td>
+          <td><strong>{{ a.company_name }}</strong></td>
+          <td style="font-family:var(--mono);font-size:11px;color:var(--text2)">{{ a.hr_email }}</td>
+          <td style="font-family:var(--mono);font-size:11px;color:var(--text2)">{{ a.sent_date }}</td>
+          <td>
+            <span class="badge {{ a.status }}" id="status-badge-{{ a.id }}">{{ a.status }}</span>
+          </td>
+          <td style="font-size:11px;text-align:center">
+            {% if a.followup_1_sent %}<span style="color:var(--success)">✔</span>
+            {% else %}<span style="color:var(--text3)">—</span>{% endif %}
+          </td>
+          <td style="font-size:11px;text-align:center">
+            {% if a.followup_2_sent %}<span style="color:var(--success)">✔</span>
+            {% else %}<span style="color:var(--text3)">—</span>{% endif %}
+          </td>
+          <td style="font-size:11px;text-align:center">
+            {% if a.followup_3_sent %}<span style="color:var(--success)">✔</span>
+            {% else %}<span style="color:var(--text3)">—</span>{% endif %}
+          </td>
+          <td>
+            <select onchange="updateStatus({{ a.id }}, this.value)"
+              style="font-size:11px;padding:5px 8px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-family:var(--font)">
+              {% for s in ['sent','replied','interview','offer','rejected','no-response'] %}
+              <option value="{{ s }}" {% if a.status==s %}selected{% endif %}>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <span class="icon">📭</span>
+    <h3>No applications{% if filter != 'all' %} with status "{{ filter }}"{% endif %}</h3>
+    <p>{% if filter == 'all' %}Send emails from the AI Composer to start tracking.{% else %}Try a different filter.{% endif %}</p>
+    {% if filter == 'all' %}
+    <a href="/compose" class="btn primary" style="margin-top:14px">Go to AI Composer</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{% if applications %}
+<div class="tip mt fade-in">
+  Update the status dropdown when you get a reply. The funnel on the dashboard updates automatically.
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function updateStatus(appId, status) {
+  const r = await fetch('/api/update-status', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({app_id: appId, status})
+  });
+  const d = await r.json();
+  if (d.ok) {
+    const badge = document.getElementById('status-badge-'+appId);
+    badge.textContent = status;
+    badge.className = 'badge '+status;
+    toast('Status updated to "'+status+'"','ok');
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Follow-ups — DevOps Job Hunter{% endblock %}
+{% block page_title %}Follow-ups{% endblock %}
+{% block page_sub %}Scheduled nudges due today{% endblock %}
+
+{% block content %}
+{% set total_due = due1|length + due2|length + due3|length %}
+
+{% if total_due == 0 %}
+<div class="card fade-in">
+  <div class="empty" style="padding:60px 20px">
+    <span class="icon" style="font-size:48px">🎉</span>
+    <h3>All caught up!</h3>
+    <p>No follow-ups due today. Check back tomorrow.</p>
+  </div>
+</div>
+{% else %}
+<div class="flex-between mb fade-in">
+  <div style="font-family:var(--mono);font-size:13px;color:var(--text2)">
+    <span style="color:var(--accent);font-weight:600">{{ total_due }}</span> follow-ups due today
+  </div>
+  <button class="btn primary" onclick="sendAll()">⚡ Send all {{ total_due }} now</button>
+</div>
+{% endif %}
+
+<!-- FOLLOW-UP 1 -->
+{% if due1 %}
+<div class="card fade-in mb">
+  <div class="flex-between" style="margin-bottom:14px">
+    <div>
+      <div class="card-title" style="margin-bottom:2px">Follow-up 1 — Day {{ cfg.settings.followup_day_1 }}</div>
+      <div style="font-size:11px;color:var(--text2)">Gentle nudge referencing your original email</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="badge sent">{{ due1|length }} due</span>
+      <button class="btn sm primary" onclick="sendBatch(1)">Send all</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Company</th><th>HR Email</th><th>Due date</th><th>Preview</th><th>Send</th></tr></thead>
+      <tbody>
+        {% for a in due1 %}
+        <tr id="fup1-{{ a.id }}">
+          <td><strong>{{ a.company_name }}</strong></td>
+          <td style="font-family:var(--mono);font-size:11px">{{ a.hr_email }}</td>
+          <td style="font-family:var(--mono);font-size:11px;color:var(--accent)">{{ a.followup_1_date }}</td>
+          <td><button class="btn sm" onclick="preview('{{ a.company_name }}', 1)">Preview</button></td>
+          <td><button class="btn sm success" onclick="sendOne({{ a.id }}, 1, '{{ a.company_name }}')">Send</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- FOLLOW-UP 2 -->
+{% if due2 %}
+<div class="card fade-in mb">
+  <div class="flex-between" style="margin-bottom:14px">
+    <div>
+      <div class="card-title" style="margin-bottom:2px">Follow-up 2 — Day {{ cfg.settings.followup_day_2 }}</div>
+      <div style="font-size:11px;color:var(--text2)">Value-add: share an insight or project</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="badge" style="background:rgba(255,165,2,.1);color:var(--warn);border-color:rgba(255,165,2,.3)">{{ due2|length }} due</span>
+      <button class="btn sm warn" onclick="sendBatch(2)">Send all</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Company</th><th>HR Email</th><th>Due date</th><th>Preview</th><th>Send</th></tr></thead>
+      <tbody>
+        {% for a in due2 %}
+        <tr id="fup2-{{ a.id }}">
+          <td><strong>{{ a.company_name }}</strong></td>
+          <td style="font-family:var(--mono);font-size:11px">{{ a.hr_email }}</td>
+          <td style="font-family:var(--mono);font-size:11px;color:var(--warn)">{{ a.followup_2_date }}</td>
+          <td><button class="btn sm" onclick="preview('{{ a.company_name }}', 2)">Preview</button></td>
+          <td><button class="btn sm success" onclick="sendOne({{ a.id }}, 2, '{{ a.company_name }}')">Send</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- FOLLOW-UP 3 -->
+{% if due3 %}
+<div class="card fade-in mb">
+  <div class="flex-between" style="margin-bottom:14px">
+    <div>
+      <div class="card-title" style="margin-bottom:2px">Break-up email — Day {{ cfg.settings.followup_day_3 }}</div>
+      <div style="font-size:11px;color:var(--text2)">Final memorable touch — leaves the door open</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="badge rejected">{{ due3|length }} due</span>
+      <button class="btn sm danger" onclick="sendBatch(3)">Send all</button>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Company</th><th>HR Email</th><th>Due date</th><th>Preview</th><th>Send</th></tr></thead>
+      <tbody>
+        {% for a in due3 %}
+        <tr id="fup3-{{ a.id }}">
+          <td><strong>{{ a.company_name }}</strong></td>
+          <td style="font-family:var(--mono);font-size:11px">{{ a.hr_email }}</td>
+          <td style="font-family:var(--mono);font-size:11px;color:var(--danger)">{{ a.followup_3_date }}</td>
+          <td><button class="btn sm" onclick="preview('{{ a.company_name }}', 3)">Preview</button></td>
+          <td><button class="btn sm success" onclick="sendOne({{ a.id }}, 3, '{{ a.company_name }}')">Send</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- PREVIEW MODAL -->
+<div class="modal-bg" id="preview-modal">
+  <div class="modal">
+    <div class="modal-title" id="preview-title">Follow-up preview</div>
+    <div class="email-subject-bar"><span>Subject:</span> <span id="prev-subj" style="color:var(--text)">—</span></div>
+    <div class="email-preview" id="prev-body">Generating...</div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('preview-modal')">Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function sendOne(appId, fnum, company) {
+  const btn = event.target;
+  btn.innerHTML = '<span class="spinner"></span>';
+  btn.disabled = true;
+  const r = await fetch('/api/send-followup', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({app_id: appId, fnum})
+  });
+  const d = await r.json();
+  if (d.ok) {
+    document.getElementById('fup'+fnum+'-'+appId)?.remove();
+    toast((d.dry_run ? '[dry-run] ' : '') + 'Follow-up sent to '+company,'ok');
+  } else {
+    btn.innerHTML = 'Send'; btn.disabled = false;
+    toast(d.error,'err');
+  }
+}
+
+async function sendBatch(fnum) {
+  // collect all rows for this fnum and send one by one
+  const rows = document.querySelectorAll('[id^="fup'+fnum+'-"]');
+  for (const row of rows) {
+    const id = parseInt(row.id.split('-')[1]);
+    const company = row.cells[0].textContent.trim();
+    const r = await fetch('/api/send-followup', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({app_id: id, fnum})
+    });
+    const d = await r.json();
+    if (d.ok) { row.remove(); toast('Sent: '+company,'ok'); }
+    await new Promise(res=>setTimeout(res,1000));
+  }
+  toast('Batch complete','ok');
+}
+
+async function sendAll() {
+  await sendBatch(1);
+  await sendBatch(2);
+  await sendBatch(3);
+}
+
+async function preview(company, fnum) {
+  openModal('preview-modal');
+  document.getElementById('preview-title').textContent = 'Follow-up '+fnum+' — '+company;
+  document.getElementById('prev-subj').textContent = '…';
+  document.getElementById('prev-body').textContent = 'Generating with Groq AI…';
+  const r = await fetch('/api/generate-followup', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({company, fnum})
+  });
+  const d = await r.json();
+  document.getElementById('prev-subj').textContent = d.subject;
+  document.getElementById('prev-body').textContent  = d.body;
+}
+</script>
+{% endblock %}

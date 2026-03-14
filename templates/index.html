@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — DevOps Job Hunter{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_sub %}Your job hunt at a glance{% endblock %}
+
+{% block content %}
+<!-- STATS -->
+<div class="stats-grid fade-in">
+  <div class="stat-card blue">
+    <div class="stat-label">Companies</div>
+    <div class="stat-val">{{ stats.companies }}</div>
+    <div class="stat-sub">in database</div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-label">Emails Sent</div>
+    <div class="stat-val">{{ stats.sent }}</div>
+    <div class="stat-sub">total applications</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-label">Replies</div>
+    <div class="stat-val">{{ stats.replies }}</div>
+    <div class="stat-sub">{{ stats.rate }} reply rate</div>
+  </div>
+  <div class="stat-card yellow">
+    <div class="stat-label">Interviews</div>
+    <div class="stat-val">{{ stats.interviews }}</div>
+    <div class="stat-sub">booked</div>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-label">Today</div>
+    <div class="stat-val">{{ stats.sent_today }}</div>
+    <div class="stat-sub">of {{ stats.limit }} limit</div>
+  </div>
+</div>
+
+<!-- DAILY PROGRESS -->
+<div class="card fade-in mb">
+  <div class="flex-between" style="margin-bottom:10px">
+    <span class="card-title" style="margin-bottom:0">Daily send progress</span>
+    <span style="font-family:var(--mono);font-size:12px;color:var(--text2)">{{ stats.sent_today }}/{{ stats.limit }}</span>
+  </div>
+  <div class="progress-track">
+    <div class="progress-fill" style="width:{{ [stats.sent_today/stats.limit*100,100]|min|int }}%"></div>
+  </div>
+</div>
+
+<div class="grid2 fade-in-delay">
+  <!-- FOLLOW-UPS DUE -->
+  <div class="card">
+    <div class="card-title">Follow-ups due today</div>
+    {% if stats.due1 == 0 and stats.due2 == 0 and stats.due3 == 0 %}
+    <div class="empty" style="padding:24px 0">
+      <span class="icon" style="font-size:28px">✓</span>
+      <p>All caught up!</p>
+    </div>
+    {% else %}
+    <div style="display:flex;flex-direction:column;gap:10px">
+      {% if stats.due1 > 0 %}
+      <a href="/followups" style="text-decoration:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;transition:border-color .15s" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)'">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text)">Follow-up 1</div>
+            <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">Day {{ cfg.settings.followup_day_1 }} nudge</div>
+          </div>
+          <span class="badge sent">{{ stats.due1 }} due</span>
+        </div>
+      </a>
+      {% endif %}
+      {% if stats.due2 > 0 %}
+      <a href="/followups" style="text-decoration:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;transition:border-color .15s" onmouseover="this.style.borderColor='var(--warn)'" onmouseout="this.style.borderColor='var(--border2)'">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text)">Follow-up 2</div>
+            <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">Day {{ cfg.settings.followup_day_2 }} value-add</div>
+          </div>
+          <span class="badge" style="background:rgba(255,165,2,.1);color:var(--warn);border-color:rgba(255,165,2,.3)">{{ stats.due2 }} due</span>
+        </div>
+      </a>
+      {% endif %}
+      {% if stats.due3 > 0 %}
+      <a href="/followups" style="text-decoration:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;transition:border-color .15s" onmouseover="this.style.borderColor='var(--danger)'" onmouseout="this.style.borderColor='var(--border2)'">
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text)">Break-up email</div>
+            <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">Day {{ cfg.settings.followup_day_3 }} final touch</div>
+          </div>
+          <span class="badge rejected">{{ stats.due3 }} due</span>
+        </div>
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- RECENT ACTIVITY -->
+  <div class="card">
+    <div class="flex-between" style="margin-bottom:14px">
+      <span class="card-title" style="margin-bottom:0">Recent applications</span>
+      <a href="/tracker" class="btn sm">View all</a>
+    </div>
+    {% if recent %}
+    <div class="table-wrap">
+      <table>
+        <tbody>
+          {% for r in recent %}
+          <tr>
+            <td><strong>{{ r[0] }}</strong></td>
+            <td style="font-family:var(--mono);font-size:11px">{{ r[2] }}</td>
+            <td><span class="badge {{ r[3] }}">{{ r[3] }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty" style="padding:24px 0">
+      <span class="icon" style="font-size:28px">📭</span>
+      <p>No emails sent yet</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- QUICK ACTIONS -->
+<div class="card mt fade-in-delay">
+  <div class="card-title">Quick actions</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <a href="/companies" class="btn primary">⬡ Add companies</a>
+    <a href="/compose" class="btn primary">✦ Write AI email</a>
+    <a href="/followups" class="btn warn">↻ Send follow-ups</a>
+    <button class="btn success" onclick="batchSend()">⚡ Batch send today</button>
+    <a href="/setup" class="btn">⚙ Setup</a>
+  </div>
+</div>
+
+<!-- SETUP CHECKLIST -->
+<div class="card mt fade-in-delay">
+  <div class="card-title">Setup checklist</div>
+  <div style="display:flex;flex-direction:column;gap:0">
+    {% set profile_done = cfg.profile.name and cfg.profile.achievement_1 %}
+    {% set key_done = cfg.api_keys.groq %}
+    {% set company_done = stats.companies >= 5 %}
+    {% set email_done = stats.sent > 0 %}
+
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:18px">{{ '✅' if profile_done else '⬜' }}</span>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:{{ 'var(--success)' if profile_done else 'var(--text)' }}">Fill out your profile</div>
+        <div style="font-size:11px;color:var(--text3)">Name, skills, achievements</div>
+      </div>
+      {% if not profile_done %}<a href="/setup" class="btn sm">Go →</a>{% endif %}
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:18px">{{ '✅' if key_done else '⬜' }}</span>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:{{ 'var(--success)' if key_done else 'var(--text)' }}">Add Groq API key</div>
+        <div style="font-size:11px;color:var(--text3)">Free at console.groq.com</div>
+      </div>
+      {% if not key_done %}<a href="/setup" class="btn sm">Go →</a>{% endif %}
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:18px">{{ '✅' if company_done else '⬜' }}</span>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:{{ 'var(--success)' if company_done else 'var(--text)' }}">Add 5+ companies</div>
+        <div style="font-size:11px;color:var(--text3)">{{ stats.companies }} added so far</div>
+      </div>
+      {% if not company_done %}<a href="/companies" class="btn sm">Go →</a>{% endif %}
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 0">
+      <span style="font-size:18px">{{ '✅' if email_done else '⬜' }}</span>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:{{ 'var(--success)' if email_done else 'var(--text)' }}">Send your first email</div>
+        <div style="font-size:11px;color:var(--text3)">Use the AI composer</div>
+      </div>
+      {% if not email_done %}<a href="/compose" class="btn sm">Go →</a>{% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- BATCH SEND MODAL -->
+<div class="modal-bg" id="batch-modal">
+  <div class="modal">
+    <div class="modal-title">⚡ Batch Send Results</div>
+    <div id="batch-results" style="font-size:13px;line-height:1.8;font-family:var(--mono);color:var(--text2)">Sending...</div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('batch-modal')">Close</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function batchSend() {
+  openModal('batch-modal');
+  document.getElementById('batch-results').innerHTML = '<span class="spinner"></span>  Generating AI emails and sending...';
+  const r = await fetch('/api/batch-send', {method:'POST'});
+  const d = await r.json();
+  if (!d.ok) {
+    document.getElementById('batch-results').innerHTML = '<span style="color:var(--danger)">✖  '+d.error+'</span>';
+    return;
+  }
+  const lines = d.results.map(r =>
+    (r.ok ? '<span style="color:var(--success)">✔</span>' : '<span style="color:var(--danger)">✖</span>') +
+    '  <strong>' + r.company + '</strong>  <span style="color:var(--text3)">→ '+r.email+'</span>' +
+    (r.ok ? '' : '  <span style="color:var(--danger);font-size:11px">'+r.error+'</span>')
+  );
+  document.getElementById('batch-results').innerHTML =
+    (d.results.length ? lines.join('<br>') : 'No un-applied companies found.') +
+    '<br><br><span style="color:var(--text3)">Done. '+ d.results.filter(r=>r.ok).length+' sent.</span>';
+  setTimeout(() => location.reload(), 3000);
+}
+</script>
+{% endblock %}

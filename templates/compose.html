@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block title %}AI Composer — DevOps Job Hunter{% endblock %}
+{% block page_title %}AI Composer{% endblock %}
+{% block page_sub %}Generate personalized emails with Groq AI{% endblock %}
+
+{% block content %}
+<div class="grid2 fade-in" style="align-items:start">
+
+  <!-- LEFT: SETTINGS -->
+  <div>
+    <div class="card">
+      <div class="card-title">Email settings</div>
+
+      <div class="form-group">
+        <label>Target company *</label>
+        <select id="co-select">
+          <option value="">— select company —</option>
+          {% for c in companies %}
+          <option value="{{ c.id }}" data-email="{{ c.hr_email }}" data-name="{{ c.name }}">{{ c.name }} — {{ c.hr_email }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Tone</label>
+        <select id="tone">
+          <option>Professional & concise</option>
+          <option>Enthusiastic & direct</option>
+          <option>Confident & bold</option>
+          <option>Conversational & human</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Opening angle</label>
+        <select id="angle">
+          <option>Lead with top achievement</option>
+          <option>Lead with company research</option>
+          <option>Lead with a problem you can solve</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Extra context (optional)</label>
+        <textarea id="extra" rows="2" placeholder="e.g. They just raised Series B, scaling infra team..."></textarea>
+      </div>
+
+      <button class="btn primary" style="width:100%;justify-content:center" onclick="generateEmail()" id="gen-btn">
+        ✦ Generate with Groq AI
+      </button>
+    </div>
+
+    <div class="card mt">
+      <div class="card-title">Follow-up templates</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="padding:12px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:13px;font-weight:600">Follow-up 1</div>
+              <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">Day 5 — gentle nudge</div>
+            </div>
+            <button class="btn sm" onclick="genFollowup(1)">Generate</button>
+          </div>
+        </div>
+        <div style="padding:12px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:13px;font-weight:600">Follow-up 2</div>
+              <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">Day 12 — value add</div>
+            </div>
+            <button class="btn sm" onclick="genFollowup(2)">Generate</button>
+          </div>
+        </div>
+        <div style="padding:12px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:13px;font-weight:600">Break-up email</div>
+              <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">Day 21 — final touch</div>
+            </div>
+            <button class="btn sm" onclick="genFollowup(3)">Generate</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: PREVIEW -->
+  <div>
+    <div class="card">
+      <div class="card-title">Generated email</div>
+
+      <div class="email-subject-bar" id="subj-bar">
+        <span>Subject:</span> <span id="email-subj" style="color:var(--text)">—</span>
+      </div>
+      <div class="email-subject-bar" style="margin-bottom:10px">
+        <span>To:</span> <span id="email-to" style="color:var(--text)">—</span>
+      </div>
+      <div class="email-preview" id="email-body">Select a company and click "Generate with Groq AI" to create a personalized cold email tailored to that company.</div>
+
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn" onclick="copyEmail()" id="copy-btn" disabled>⎘ Copy</button>
+        <button class="btn success" onclick="openGmail()" id="gmail-btn" disabled>✉ Open in Gmail</button>
+        <button class="btn primary" onclick="sendEmail()" id="send-btn" disabled>⚡ Send & track</button>
+      </div>
+
+      <div class="tip mt-sm">
+        After clicking "Send & track", the email is sent via your Gmail and automatically added to the tracker with follow-up dates scheduled.
+      </div>
+    </div>
+
+    <div class="card mt" id="stats-card">
+      <div class="card-title">Session stats</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;text-align:center">
+        <div style="padding:12px;background:var(--bg3);border-radius:8px">
+          <div style="font-size:20px;font-weight:800;font-family:var(--mono);color:var(--accent)" id="sess-gen">0</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">Generated</div>
+        </div>
+        <div style="padding:12px;background:var(--bg3);border-radius:8px">
+          <div style="font-size:20px;font-weight:800;font-family:var(--mono);color:var(--success)" id="sess-sent">0</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">Sent</div>
+        </div>
+        <div style="padding:12px;background:var(--bg3);border-radius:8px">
+          <div style="font-size:20px;font-weight:800;font-family:var(--mono);color:var(--warn)" id="sess-left">—</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">Left today</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentEmail = {subject:'', body:'', to:'', company_id:null, company:''};
+let sessGen = 0, sessSent = 0;
+
+async function generateEmail() {
+  const coId = document.getElementById('co-select').value;
+  if (!coId) { toast('Select a company first','err'); return; }
+  const sel = document.getElementById('co-select');
+  const opt = sel.options[sel.selectedIndex];
+
+  const btn = document.getElementById('gen-btn');
+  btn.innerHTML = '<span class="spinner"></span>  Generating...';
+  btn.disabled = true;
+
+  const r = await fetch('/api/generate-email', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      company_id: coId,
+      tone: document.getElementById('tone').value,
+      angle: document.getElementById('angle').value,
+      extra: document.getElementById('extra').value
+    })
+  });
+  const d = await r.json();
+  btn.innerHTML = '✦ Generate with Groq AI';
+  btn.disabled = false;
+
+  if (!d.ok) { toast(d.error,'err'); return; }
+
+  currentEmail = {subject:d.subject, body:d.body, to:d.to, company_id:parseInt(coId), company:d.company};
+  document.getElementById('email-subj').textContent = d.subject;
+  document.getElementById('email-to').textContent   = d.to;
+  document.getElementById('email-body').textContent = d.body;
+  document.getElementById('copy-btn').disabled  = false;
+  document.getElementById('gmail-btn').disabled = false;
+  document.getElementById('send-btn').disabled  = false;
+
+  sessGen++;
+  document.getElementById('sess-gen').textContent = sessGen;
+  toast('Email generated for '+d.company,'ok');
+}
+
+async function genFollowup(n) {
+  const sel = document.getElementById('co-select');
+  const opt = sel.options[sel.selectedIndex];
+  const coName = opt ? opt.dataset.name : '';
+  if (!coName) { toast('Select a company first','err'); return; }
+
+  const r = await fetch('/api/generate-followup', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({company: coName, fnum: n})
+  });
+  const d = await r.json();
+  if (!d.ok) return;
+
+  const sel2 = document.getElementById('co-select');
+  const opt2 = sel2.options[sel2.selectedIndex];
+  currentEmail = {subject:d.subject, body:d.body, to:opt2?.dataset.email||'', company_id:parseInt(sel2.value)||null, company:coName};
+  document.getElementById('email-subj').textContent = d.subject;
+  document.getElementById('email-to').textContent   = currentEmail.to;
+  document.getElementById('email-body').textContent = d.body;
+  document.getElementById('copy-btn').disabled  = false;
+  document.getElementById('gmail-btn').disabled = false;
+  sessGen++;
+  document.getElementById('sess-gen').textContent = sessGen;
+  toast('Follow-up '+n+' generated','ok');
+}
+
+function copyEmail() {
+  navigator.clipboard.writeText('Subject: '+currentEmail.subject+'\n\n'+currentEmail.body)
+    .then(()=>toast('Copied to clipboard','ok'))
+    .catch(()=>toast('Copy failed — select manually','err'));
+}
+
+function openGmail() {
+  const url = 'https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(currentEmail.to)
+    +'&su='+encodeURIComponent(currentEmail.subject)
+    +'&body='+encodeURIComponent(currentEmail.body);
+  window.open(url,'_blank');
+}
+
+async function sendEmail() {
+  if (!currentEmail.company_id) { toast('Generate an email first','err'); return; }
+  const btn = document.getElementById('send-btn');
+  btn.innerHTML = '<span class="spinner"></span>  Sending...';
+  btn.disabled = true;
+
+  const r = await fetch('/api/send-email', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(currentEmail)
+  });
+  const d = await r.json();
+  btn.innerHTML = '⚡ Send & track';
+  btn.disabled = false;
+
+  if (d.ok) {
+    sessSent++;
+    document.getElementById('sess-sent').textContent = sessSent;
+    toast(d.dry_run ? 'Tracked (dry-run — not actually sent)' : 'Sent & tracked!', 'ok');
+    // remove from dropdown
+    const sel = document.getElementById('co-select');
+    sel.options[sel.selectedIndex].remove();
+    sel.selectedIndex = 0;
+    currentEmail = {subject:'', body:'', to:'', company_id:null, company:''};
+  } else {
+    toast(d.error,'err');
+  }
+}
+</script>
+{% endblock %}
